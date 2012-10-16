@@ -52,7 +52,7 @@ class ProxyHandler implements Runnable{
 			InputStream inStreamFromClient = incoming.getInputStream();
 			OutputStream outStreamToClient = incoming.getOutputStream();
 			Scanner inFromClient = new Scanner(inStreamFromClient);
-			OutputStreamWriter outToClient = new OutputStreamWriter(outStreamToClient);
+			PrintWriter outToClient = new PrintWriter(outStreamToClient, true);
 
 			while(inFromClient.hasNextLine()){
 				String line = inFromClient.nextLine();
@@ -60,9 +60,8 @@ class ProxyHandler implements Runnable{
 				//				System.out.println(line);
 				if(urlStr != null){
 					if(filter(urlStr)){
-						outToClient.write("HTTP/1.0 404 Not Found\n\n");
-						outToClient.write("This webpage is blocked");
-						outToClient.flush();
+						outToClient.println("HTTP/1.0 404 Not Found\n\n");
+						outToClient.println("This webpage is blocked");
 						incoming.close();
 						System.out.println("404 sent to: "+counter);
 						break;
@@ -73,7 +72,7 @@ class ProxyHandler implements Runnable{
 							Socket s = new Socket(url.getHost(),80);
 
 							OutputStreamWriter outToServer = new OutputStreamWriter(s.getOutputStream());
-							outToServer.write("GET " + url.getFile() + " HTTP/1.0\r\nHost: " + url.getHost() + "\n\n");
+							outToServer.write("GET " + url.getFile() + " HTTP/1.0\r\nHost: " + url.getHost() + "\nUser-Agent: Mozilla/5.0 (iPad; U; CPU OS 3_2_1 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Mobile/7B405\n\n");
 							outToServer.flush();
 
 							if (toLanguage != null){
@@ -90,26 +89,22 @@ class ProxyHandler implements Runnable{
 										System.out.println("translated line 101***************");
 										System.out.println(translatedText);
 
-										outToClient.write(response[0]);
-										outToClient.write(translatedText);
-										outToClient.flush();
+										outToClient.print(response[0]);
+										outToClient.print(translatedText);
 									}catch(Exception e){
-										outToClient.write(response[0]);
-										outToClient.write(response[1]);
+										outToClient.print(response[0]);
+										outToClient.print(response[1]);
 									}
 								}
 								else{
-									outToClient.write(response[0]);
-									outToClient.write(response[1]);
+									outToClient.print(response[0]);
+									outToClient.print(response[1]);
 								}
 							}else{
-								DataInputStream dis = new DataInputStream(s.getInputStream());
-								int ch;
-								while((ch = dis.read()) != -1 ){
-//									outToClient.println(sc.nextLine());
-									outToClient.write(ch);
+								Scanner sc = new Scanner(s.getInputStream());
+								while(sc.hasNextLine()){
+									outToClient.println(sc.nextLine());
 								}
-								outToClient.flush();
 							}
 							incoming.close();
 							s.close();
@@ -117,8 +112,8 @@ class ProxyHandler implements Runnable{
 							break;
 						}
 						catch(UnknownHostException e){
-							outToClient.write("HTTP/1.0 404 Not Found\n\n");
-							outToClient.write("The Host is known");
+							outToClient.println("HTTP/1.0 404 Not Found\n\n");
+							outToClient.println("The Host is known");
 							incoming.close();
 							System.out.println("Known host error sent to: "+counter);
 							break;
